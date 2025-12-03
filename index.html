@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PicFixer - Live Image Effects</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: #2d2d3a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg-tertiary);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .upload-text strong {
+            color: var(--accent);
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        /* Presets */
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .preset-actions {
+            margin-top: 10px;
+        }
+
+        .save-preset-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .save-preset-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .saved-presets {
+            margin-top: 12px;
+        }
+
+        .saved-presets-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            opacity: 0.7;
+        }
+
+        .saved-preset-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .saved-preset-item:hover {
+            border-color: var(--accent);
+        }
+
+        .saved-preset-name {
+            font-size: 12px;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .saved-preset-colors {
+            display: flex;
+            gap: 3px;
+            margin: 0 8px;
+        }
+
+        .saved-preset-delete {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0.5;
+            transition: all 0.15s ease;
+        }
+
+        .saved-preset-delete:hover {
+            opacity: 1;
+            color: #ef4444;
+        }
+
+        .preset-colors {
+            display: flex;
+            gap: 3px;
+            margin-top: 6px;
+        }
+
+        .preset-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Controls */
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .control-value {
+            color: var(--accent);
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        select {
+            padding: 10px 12px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Color Palette */
+        .palette-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .palette-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-input-wrapper {
+            position: relative;
+        }
+
+        .color-input {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border: 2px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .color-hex {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            width: 90px;
+        }
+
+        .color-hex:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .remove-color-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .remove-color-btn:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .add-color-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .add-color-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Toggle */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border: 1px solid var(--border);
+        }
+
+        .toggle.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .toggle-knob {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s ease;
+        }
+
+        .toggle.active .toggle-knob {
+            transform: translateX(20px);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            position: relative;
+        }
+
+        .canvas-container {
+            position: relative;
+            max-width: 100%;
+            max-height: calc(100vh - 150px);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        #outputCanvas {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100vh - 150px);
+            object-fit: contain;
+        }
+
+        .placeholder {
+            width: 600px;
+            height: 400px;
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .placeholder-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .placeholder-text {
+            font-size: 16px;
+        }
+
+        /* Processing Indicator */
+        .processing-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .processing-indicator.active {
+            display: flex;
+        }
+
+        .processing-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Download Button */
+        .download-section {
+            position: absolute;
+            bottom: 32px;
+            right: 32px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .download-btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-webp {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+        }
+
+        .download-webp:hover:not(:disabled) {
+            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+        }
+
+        /* Processing Time */
+        .processing-time {
+            position: absolute;
+            bottom: 32px;
+            left: 32px;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .processing-time .time {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* Custom Color Picker */
+        .color-picker-trigger {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            overflow: hidden;
+            transition: border-color 0.15s ease, transform 0.1s ease;
+            flex-shrink: 0;
+        }
+
+        .color-picker-trigger:hover {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .color-preview-box {
+            width: 100%;
+            height: 100%;
+        }
+
+        .color-picker-popup {
+            position: fixed;
+            z-index: 10000;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            display: none;
+            min-width: 260px;
+        }
+
+        .color-picker-popup.visible {
+            display: block;
+            animation: picker-fade-in 0.15s ease;
+        }
+
+        @keyframes picker-fade-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .picker-main {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .saturation-brightness-area {
+            width: 230px;
+            height: 150px;
+            position: relative;
+            border-radius: 8px;
+            cursor: crosshair;
+            background: hsl(0, 100%, 50%);
+        }
+
+        .sb-gradient-white {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, #fff, transparent);
+            border-radius: 8px;
+        }
+
+        .sb-gradient-black {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, #000);
+            border-radius: 8px;
+        }
+
+        .sb-cursor {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hue-slider {
+            width: 230px;
+            height: 16px;
+            border-radius: 8px;
+            background: linear-gradient(to right, 
+                hsl(0, 100%, 50%), 
+                hsl(60, 100%, 50%), 
+                hsl(120, 100%, 50%), 
+                hsl(180, 100%, 50%), 
+                hsl(240, 100%, 50%), 
+                hsl(300, 100%, 50%), 
+                hsl(360, 100%, 50%)
+            );
+            position: relative;
+            cursor: pointer;
+        }
+
+        .hue-cursor {
+            position: absolute;
+            width: 8px;
+            height: 20px;
+            background: white;
+            border-radius: 4px;
+            top: -2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            transform: translateX(-50%);
+            pointer-events: none;
+        }
+
+        .picker-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .preview-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+        }
+
+        .picker-preview .hex-input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+        }
+
+        .picker-preview .hex-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .picker-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .picker-actions button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .picker-cancel {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .picker-cancel:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .picker-confirm {
+            background: var(--accent);
+            border: none;
+            color: white;
+        }
+
+        .picker-confirm:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .main-content {
+                min-height: 60vh;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🎨</div>
+                PicFixer
+            </div>
+
+            <!-- Upload -->
+            <div class="section">
+                <div class="section-title">Kép feltöltése</div>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                        <strong>Kattints ide</strong> vagy húzd ide a képet
+                    </div>
+                </div>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+
+            <!-- Presets -->
+            <div class="section">
+                <div class="section-title">Presetek</div>
+                <div class="presets-grid" id="presetsGrid">
+                    <!-- Presets will be rendered by JS -->
+                </div>
+                <div class="preset-actions">
+                    <button class="save-preset-btn" id="savePresetBtn">💾 Mentés</button>
+                </div>
+                <div class="saved-presets" id="savedPresetsContainer">
+                    <!-- User saved presets will appear here -->
+                </div>
+            </div>
+
+            <!-- Dithering -->
+            <div class="section">
+                <div class="section-title">Dithering & Pixelizálás</div>
+                <div class="control-group">
+                    <label class="control-label">Algoritmus</label>
+                    <select id="ditheringType">
+                        <option value="none">Nincs</option>
+                        <option value="floyd-steinberg">Floyd-Steinberg</option>
+                        <option value="ordered">Ordered (Bayer)</option>
+                        <option value="atkinson">Atkinson</option>
+                    </select>
+                </div>
+                <div class="control-group" id="bayerSizeGroup" style="display: none;">
+                    <label class="control-label">
+                        Bayer mátrix méret
+                        <span class="control-value" id="bayerSizeValue">4</span>
+                    </label>
+                    <input type="range" id="bayerSize" min="2" max="8" step="2" value="4">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">
+                        Erősség
+                        <span class="control-value" id="ditheringStrengthValue">100%</span>
+                    </label>
+                    <input type="range" id="ditheringStrength" min="0" max="100" value="100">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">
+                        Pixel skála
+                        <span class="control-value" id="pixelScaleValue">1.0x</span>
+                    </label>
+                    <input type="range" id="pixelScale" min="1" max="200" value="5" step="5">
+                </div>
+            </div>
+
+            <!-- Posterization -->
+            <div class="section">
+                <div class="section-title">Poszterizálás</div>
+                <div class="toggle-group">
+                    <span class="toggle-label">Poszterizálás bekapcsolva</span>
+                    <div class="toggle" id="posterizeToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+                <div class="control-group" id="posterizeLevelsGroup" style="display: none;">
+                    <label class="control-label">
+                        Szintek
+                        <span class="control-value" id="posterizeLevelsValue">4</span>
+                    </label>
+                    <input type="range" id="posterizeLevels" min="2" max="16" value="4">
+                </div>
+                <div class="control-group" id="posterizeModeGroup" style="display: none;">
+                    <label class="control-label">Mód</label>
+                    <select id="posterizeMode">
+                        <option value="luminance">Luminance</option>
+                        <option value="per-channel">Per-Channel</option>
+                        <option value="artistic">Artistic</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Effects -->
+            <div class="section">
+                <div class="section-title">Blobok</div>
+                <div class="toggle-group">
+                    <span class="toggle-label">Blob overlay</span>
+                    <div class="toggle" id="blobToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+                <div id="blobControls" style="display: none;">
+                    <div class="control-group">
+                        <label class="control-label">
+                            Blob szám
+                            <span class="control-value" id="blobCountValue">15</span>
+                        </label>
+                        <input type="range" id="blobCount" min="3" max="50" value="15">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Min méret (px)
+                            <span class="control-value" id="blobMinSizeValue">50</span>
+                        </label>
+                        <input type="range" id="blobMinSize" min="20" max="150" value="50">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Max méret (px)
+                            <span class="control-value" id="blobMaxSizeValue">200</span>
+                        </label>
+                        <input type="range" id="blobMaxSize" min="50" max="400" value="200">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Intenzitás
+                            <span class="control-value" id="blobOpacityValue">30%</span>
+                        </label>
+                        <input type="range" id="blobOpacity" min="10" max="100" value="30">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Lágyság
+                            <span class="control-value" id="blobSoftnessValue">60%</span>
+                        </label>
+                        <input type="range" id="blobSoftness" min="20" max="100" value="60">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Blend mód</label>
+                        <select id="blobBlendMode">
+                            <option value="overlay">Overlay</option>
+                            <option value="soft-light">Soft Light</option>
+                            <option value="hard-light">Hard Light</option>
+                            <option value="multiply">Multiply</option>
+                            <option value="screen">Screen</option>
+                            <option value="color-dodge">Color Dodge</option>
+                            <option value="color-burn">Color Burn</option>
+                            <option value="difference">Difference</option>
+                            <option value="exclusion">Exclusion</option>
+                            <option value="lighten">Lighten</option>
+                            <option value="darken">Darken</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Noise -->
+            <div class="section">
+                <div class="section-title">Zajhatás</div>
+                <div class="toggle-group">
+                    <span class="toggle-label">Noise texture</span>
+                    <div class="toggle" id="noiseToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+                <div class="control-group" id="noiseAmountGroup" style="display: none;">
+                    <label class="control-label">
+                        Noise mennyiség
+                        <span class="control-value" id="noiseAmountValue">10</span>
+                    </label>
+                    <input type="range" id="noiseAmount" min="5" max="50" value="10">
+                </div>
+            </div>
+
+            <!-- Color Palette -->
+            <div class="section">
+                <div class="section-title">Színpaletta</div>
+                <div class="palette-container" id="paletteContainer">
+                    <!-- Colors will be rendered by JS -->
+                </div>
+                <button class="add-color-btn" id="addColorBtn">+ Szín hozzáadása</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="processing-indicator" id="processingIndicator">
+                <div class="processing-spinner"></div>
+                <span>Feldolgozás...</span>
+            </div>
+
+            <div class="canvas-container" id="canvasContainer">
+                <div class="placeholder" id="placeholder">
+                    <div class="placeholder-icon">🖼️</div>
+                    <div class="placeholder-text">Tölts fel egy képet a kezdéshez</div>
+                </div>
+                <canvas id="outputCanvas" style="display: none;"></canvas>
+            </div>
+
+            <div class="processing-time" id="processingTime" style="display: none;">
+                Feldolgozási idő: <span class="time" id="timeValue">0ms</span>
+            </div>
+
+            <div class="download-section">
+                <button class="download-btn" id="downloadBtn" disabled>
+                    <span>💾</span>
+                    Letöltés PNG
+                </button>
+                <button class="download-btn download-webp" id="downloadWebpBtn" disabled>
+                    <span>🖼️</span>
+                    Letöltés WebP
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
